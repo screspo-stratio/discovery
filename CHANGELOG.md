@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.30.0 (June 21, 2018)
+## 0.30.0 (June 27, 2018)
 
 * [DGPB-1119] Upgrade to metabase 0.29.4
 
