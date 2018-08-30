@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.31.0 (upcoming)
+## 0.31.0 (August 30, 2018)
 
 * [DGPB-1357] Upgrade to metabase 0.30.1
 * [DGPB-1345] Add more metadata refresh options
