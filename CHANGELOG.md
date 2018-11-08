@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.31.1 (upcoming)
+## 0.31.1 (November 08, 2018)
 
 * [DGPB-1583] Fix init login function
 
