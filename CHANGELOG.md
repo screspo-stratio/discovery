@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.31.2 (upcoming)
+## 0.31.2 (January 18, 2019)
 
  * Set Java Xmx variable dynamic
 
