@@ -19,7 +19,7 @@
 
     <groupId>com.stratio.schema</groupId>
     <artifactId>discovery</artifactId>
-    <version>0.31.2-SNAPSHOT</version>
+    <version>0.31.3-SNAPSHOT</version>
     <name>discovery</name>
 
     <build>
