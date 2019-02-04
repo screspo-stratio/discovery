@@ -146,7 +146,7 @@ Feature: [QATM-1866][Installation Discovery Command Center] Discovery install wi
     # Check status in DCOS
     # Checking if service_ID contains "/" character or subdirectories. Ex: /discovery/discovery
     When I open a ssh connection to '${DCOS_CLI_HOST}' with user 'root' and password 'stratio'
-    Then I run 'echo ${SERVICE_ID:-/discovery/discovery} | sed 's/\//./g' |  sed 's/^\.\(.*\)/\1/'' in the ssh connection and save the value in environment variable 'serviceIDDcosTaskPath'
+    Then I run 'echo ${SERVICE_ID:-/discovery/discovery} | sed 's/\//./g' |  sed 's/^\.\(.*\)/\1/'' locally and save the value in environment variable 'serviceIDDcosTaskPath'
     And in less than '500' seconds, checking each '20' seconds, the command output 'dcos task | grep !{serviceIDDcosTaskPath} | grep R | wc -l' contains '1'
     When I run 'dcos task |  awk '{print $5}' | grep !{serviceIDDcosTaskPath}' in the ssh connection and save the value in environment variable 'dicoveryTaskId'
     Then in less than '10' seconds, checking each '10' seconds, the command output 'dcos marathon task show !{dicoveryTaskId} | grep TASK_RUNNING |wc -l' contains '1'
