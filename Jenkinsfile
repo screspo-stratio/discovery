@@ -27,7 +27,7 @@ hose {
 	                'env': ['HUB_HOST=selenium391.cd','HUB_PORT=4444','SE_OPTS="-browser browserName=chrome,version=64%%JUID "']
             	       ]],
             ['DCOSCLI': ['image': 'stratio/dcos-cli:0.4.15-SNAPSHOT',
-                         'env': ['DCOS_IP=10.200.0.205',
+                         'env': ['DCOS_IP=10.200.0.156',
                                  'SSL=true',
                                  'SSH=true',
                                  'TOKEN_AUTHENTICATION=true',
