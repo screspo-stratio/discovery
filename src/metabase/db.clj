@@ -126,7 +126,30 @@
                     :dbname   (config/config-str :mb-db-dbname)
                     :user     (config/config-str :mb-db-user)
                     :password (config/config-str :mb-db-pass)}))))
+;; STRATIO
+(def ^:const ssl-params
+  "Params to include in the JDBC connection spec for an SSL connection."
+  {:ssl        true
+   :sslmode    "require"
+   :sslfactory "org.postgresql.ssl.NonValidatingFactory"})  ; HACK Why enable SSL if we disable certificate validation?
 
+(def ^:const disable-ssl-params
+  "Params to include in the JDBC connection spec to disable SSL."
+  {:sslmode "disable"})
+
+(defn- connection-details
+  [{ssl? :ssl, :as details-map}]
+  (-> details-map
+      (update :port (fn [port]
+                      (if (string? port)
+                        (Integer/parseInt port)
+                        port)))
+      ;; remove :ssl in case it's false; DB will still try (& fail) to connect if the key is there
+      (dissoc :ssl)
+      (merge (if ssl?
+               ssl-params
+               disable-ssl-params))))
+;; FIN
 (defn jdbc-details
   "Takes our own MB details map and formats them properly for connection details for JDBC."
   ([]

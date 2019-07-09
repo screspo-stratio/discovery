@@ -22,7 +22,9 @@
              [user :refer [User]]]
             [metabase.plugins.classloader :as classloader]
             [metabase.util.i18n :refer [deferred-trs set-locale trs]]
-            [toucan.db :as db]))
+            [toucan.db :as db]
+            [metabase.public-settings :as public-settings]
+            [metabase.models.user :refer [User], :as user]))
 
 ;;; --------------------------------------------------- Lifecycle ----------------------------------------------------
 
@@ -76,6 +78,19 @@
   (log/info (trs "Setting up and migrating Metabase DB. Please sit tight, this may take a minute..."))
   (mdb/setup-db!)
   (init-status/set-progress! 0.5)
+
+  ;; TODO romartin:
+  (let [new-install? (not (db/exists? User))]
+    (if new-install?
+      (when (public-settings/init-admin-user)
+        (let [ new-user (db/insert! User
+                                    :email        (public-settings/init-admin-mail)
+                                    :first_name   (public-settings/init-admin-user)
+                                    :last_name    (public-settings/init-admin-user)
+                                    :password     (str (java.util.UUID/randomUUID))
+                                    :is_superuser true)]
+          ;; this results in a second db call, but it avoids redundant password code so figure it's worth it
+          (user/set-password! (:id new-user) (public-settings/init-admin-password))))))
 
   ;; run a very quick check to see if we are doing a first time installation
   ;; the test we are using is if there is at least 1 User in the database

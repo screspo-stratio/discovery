@@ -18,6 +18,33 @@ ENV LC_CTYPE en_US.UTF-8
 
 RUN apk add --update bash yarn git wget make gettext
 
+ADD . /app/source
+
+# import Crossdata and defaultSecrets
+RUN mkdir /root/.crossdata/ && \
+    mkdir /root/defaultsecrets/ && \
+    mv /app/source/resources/security/* /root/defaultsecrets/. && \
+    mkdir /root/kms/ && \
+    mv  /app/source/resources/kms/* /root/kms/.
+
+ENV MAVEN_VERSION="3.2.5" \
+    M2_HOME=/usr/lib/mvn
+
+# To generate local docker, comment mvn dependency:get and mv. Download jar in ./bin/lib/
+# http://qa.stratio.com/repository/releases/com/stratio/jdbc/stratio-crossdata-jdbc4/2.14.4-1830fff/stratio-crossdata-jdbc4-2.14.4-1830fff.jar
+RUN apk add --update wget && \
+    cd /tmp && \
+    wget "http://ftp.unicamp.br/pub/apache/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz" && \
+    tar -zxvf "apache-maven-$MAVEN_VERSION-bin.tar.gz" && \
+    mv "apache-maven-$MAVEN_VERSION" "$M2_HOME" && \
+    ln -s "$M2_HOME/bin/mvn" /usr/bin/mvn && \
+    mvn package -f /app/source/local-query-execution-factory/pom.xml && \
+    mv /app/source/local-query-execution-factory/target/local-query-execution-factory-0.2.jar /app/source/bin/lib/local-query-execution-factory-0.2.jar && \
+    mvn install:install-file -Dfile=/app/source/bin/lib/local-query-execution-factory-0.2.jar -DgroupId=com.stratio.metabase -DartifactId=local-query-execution-factory -Dversion=0.2 -Dpackaging=jar && \
+    mvn dependency:get -DgroupId=com.stratio.jdbc -DartifactId=stratio-crossdata-jdbc4 -Dversion=2.14.4-1830fff -DremoteRepositories=http://sodio.stratio.com/repository/public/ -Dtransitive=false && \
+    mv /root/.m2/repository/com/stratio/jdbc/stratio-crossdata-jdbc4/2.14.4-1830fff/stratio-crossdata-jdbc4-2.14.4-1830fff.jar /app/source/bin/lib/stratio-crossdata-jdbc4-2.14.4-1830fff.jar && \
+    mvn install:install-file -Dfile=/app/source/bin/lib/stratio-crossdata-jdbc4-2.14.4-1830fff.jar -DgroupId=com.stratio.jdbc -DartifactId=stratio-crossdata-jdbc4 -Dversion=2.14.4-1830fff -Dpackaging=jar
+
 # lein:    backend dependencies and building
 ADD https://raw.github.com/technomancy/leiningen/stable/bin/lein /usr/local/bin/lein
 RUN chmod 744 /usr/local/bin/lein
@@ -61,15 +88,24 @@ ENV FC_LANG en-US
 ENV LC_CTYPE en_US.UTF-8
 
 # dependencies
-RUN apk add --update bash ttf-dejavu fontconfig
+RUN apk add --update bash ttf-dejavu fontconfig && \
+    apk add --update curl && \
+    apk add --update jq && \
+    apk add --update openssl && \
+    rm -rf /var/cache/apk/*
 
 # add fixed cacerts
-COPY --from=builder /etc/ssl/certs/java/cacerts /opt/java/openjdk/lib/security/cacerts
+COPY --from=builder /etc/ssl/certs/java/cacerts /usr/lib/jvm/default-jvm/jre/lib/security/cacerts
 
 # add Metabase script and uberjar
-RUN mkdir -p bin target/uberjar
+RUN mkdir -p bin target/uberjar && \
+    mkdir -p bin /root/.crossdata/
 COPY --from=builder /app/source/target/uberjar/metabase.jar /app/target/uberjar/
 COPY --from=builder /app/source/bin/start /app/bin/
+COPY --from=builder /app/source/resources/log4j2.xml /app/target/log/
+COPY --from=builder /root/defaultsecrets/* /root/defaultsecrets/
+COPY --from=builder /root/kms/* /root/kms/
+
 
 # create the plugins directory, with writable permissions
 RUN mkdir -p /plugins

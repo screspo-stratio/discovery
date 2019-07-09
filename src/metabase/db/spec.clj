@@ -17,17 +17,65 @@
   (str "//" host ":" port "/" db))
 
 (defn postgres
-  "Create a Clojure JDBC database specification for a Postgres database."
+  "Create a database specification for a postgres database. Opts should include
+  keys for :db, :user, and :password. You can also optionally set host and
+  port."
   [{:keys [host port db]
-    :or   {host "localhost", port 5432, db ""}
-    :as   opts}]
-  (merge
-   {:classname                     "org.postgresql.Driver"
-    :subprotocol                   "postgresql"
-    :subname                       (make-subname host (or port 5432) db)
-    ;; I think this is done to prevent conflicts with redshift driver registering itself to handle postgres://
-    :OpenSourceSubProtocolOverride true}
-   (dissoc opts :host :port :db)))
+    :or {host "localhost", port 5432, db ""}
+    :as opts}]
+  (if (get opts :sslcert)
+    (merge {:classname "org.postgresql.Driver" ; must be in classpath
+            :subprotocol "postgresql"
+            :subname (str "//" host ":" port "/" db "?OpenSourceSubProtocolOverride=true&user=" (get opts :user) "&ssl=true&sslmode=verify-full&sslcert=" (get opts :sslcert) "&sslkey=" (get opts :sslkey) "&sslrootcert="(get opts :sslrootcert) "&prepareThreshold=0")
+            :sslmode "verify-full"
+            :ssl "true"}
+           (dissoc opts :host :port :db)
+           )
+    (merge {:classname "org.postgresql.Driver" ; must be in classpath
+           :subprotocol "postgresql"
+           :subname (str "//" host ":" port "/" db "?OpenSourceSubProtocolOverride=true&prepareThreshold=0")}
+          (dissoc opts :host :port :db))))
+
+
+(defn crossdata
+  "Create a database specification for a postgres database. Opts should include
+  keys for :db, :user, and :password. You can also optionally set host and
+  port."
+  [{:keys [host port db user]
+    :or {host "localhost", port 13422, db ""}
+    :as opts}]
+
+
+  (if db
+    (merge {:classname "com.stratio.jdbc.core.jdbc4.StratioDriver" ; must be in classpath
+            :subprotocol "crossdata"
+            :subname (str "//Server=" host ":" port ";UID=" user ";SSL=true;LogLevel=3;LogPath=/tmp/crossdata-jdbc-logs;TIMEOUT=15")}
+           (dissoc opts :host :port :db))
+    (merge {:classname "com.stratio.jdbc.core.jdbc4.StratioDriver" ; must be in classpath
+            :subprotocol "crossdata"
+            :subname (str "//Server=" host ":" port ";UID=" user ";LogLevel=3;LogPath=/tmp/crossdata-jdbc-logs;TIMEOUT=15")}
+           (dissoc opts :host :port :db))))
+
+
+(defn crossdata2
+  "Create a database specification for a crossdata database. Opts should include
+  keys for :db, :user, and :password. You can also optionally set host and
+  port."
+  [{:keys [host port db user]
+    :or {host "localhost", port 13422, db ""}
+    :as opts}]
+
+
+  (if db
+    (merge {:classname "com.stratio.jdbc.core.jdbc4.StratioDriver" ; must be in classpath
+            :subprotocol "crossdata"
+            :subname (str "//Server=" host ":" port ";UID=" user ";SSL=true;LogLevel=3;LogPath=/tmp/crossdata-jdbc-logs")}
+           (dissoc opts :host :port :db))
+    (merge {:classname "com.stratio.jdbc.core.jdbc4.StratioDriver" ; must be in classpath
+            :subprotocol "crossdata"
+            :subname (str "//Server=" host ":" port ";UID=" user ";LogLevel=3;LogPath=/tmp/crossdata-jdbc-logs")}
+           (dissoc opts :host :port :db))))
+
 
 (defn mysql
   "Create a Clojure JDBC database specification for a MySQL or MariaDB database."

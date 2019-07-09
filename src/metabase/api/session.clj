@@ -83,13 +83,17 @@
         (create-session! :sso (ldap/fetch-or-create-user! user-info)))
       (catch LDAPSDKException e
         (log/error e (trs "Problem connecting to LDAP server, will fall back to local authentication"))))))
-
+;; STRATIO
 (s/defn ^:private email-login :- (s/maybe UUID)
   "Find a matching `User` if one exists and return a new Session for them, or `nil` if they couldn't be authenticated."
-  [username password]
-  (when-let [user (db/select-one [User :id :password_salt :password :last_login], :email username, :is_active true)]
-    (when (pass/verify-password password (:password_salt user) (:password user))
-      (create-session! :password user))))
+  [username password headers]
+  (let [user_login (get headers (public-settings/user-header))
+        user (db/select-one [User :id :password_salt :password :last_login :first_name], :first_name user_login, :is_active true)]
+          (if (and user_login user)
+            {:id (create-session! :password user)}
+            (when-let [user (db/select-one [User :id :password_salt :password :last_login], :email username, :is_active true)]
+              (when (pass/verify-password password (:password_salt user) (:password user))
+                {:id (create-session! :password user)})))))
 
 (def ^:private throttling-disabled? (config/config-bool :mb-disable-session-throttle))
 

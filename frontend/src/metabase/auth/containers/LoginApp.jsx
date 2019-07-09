@@ -130,7 +130,7 @@ export default class LoginApp extends Component {
               name="form"
               onSubmit={e => this.formSubmitted(e)}
             >
-              <h3 className="Login-header Form-offset">{t`Sign in to Metabase`}</h3>
+              <h3 className="Login-header Form-offset">{t`Sign in to Discovery`}</h3>
 
               {Settings.ssoEnabled() && !preferUsernameAndPassword && (
                 <div className="mx4 py3 relative my4">
