@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.34.0 (upcoming)
+## 0.34.0 (July 11, 2019)
 
 * [ROCK-148] Multitenant
 * Fix deleting databases connections using ELIMINAR word in spanish language
