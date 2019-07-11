@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.34.0 (upcoming)
+## 0.35.0 (upcoming)
+
+* Pending changelog
+
+## 0.34.0-ef90e84 (Built: July 11, 2019 | Pre-release)
 
 * [ROCK-148] Multitenant
 * Fix deleting databases connections using ELIMINAR word in spanish language
