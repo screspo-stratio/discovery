@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.34.0 (July 26, 2019)
+## 0.34.0 (August 08, 2019)
 
 * [ROCK-475] Fix "Discovery goes down while testing stability"
 * [ROCK-475] Fix when Discovery showed only tables from default database.
