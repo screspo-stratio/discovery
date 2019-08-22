@@ -24,17 +24,18 @@ driver:
         - placeholder: 13422
     - merge:
         - dbname
-        - name: Database username
-          placeholder: crossdata-1
+        - placeholder: crossdata
+    - user
     - name: impersonate
       display-name: Connect with Discovery login user?
       default: false
       type: boolean
-    - name: ssl
-      display-name: Use a secure connection (SSL)?
-      default: true
-      type: boolean
 
+    - ssl
+    - name: ssl-option
+      display-name: Use a secure connection (SSL)?
+      default: false
+      type: boolean
     - merge:
         - additional-options
         - placeholder: "prepareThreshold = 0"

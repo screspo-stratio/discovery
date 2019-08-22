@@ -4,9 +4,12 @@
       [clojure
        [set :as set]
        [string :as str]]
+      [metabase.util :as u]
+      [clojure.tools.logging :as log]
       [metabase.driver :as driver]
       [metabase.driver.sql-jdbc
-       [common :as sql-jdbc.common]]))
+       [common :as sql-jdbc.common]
+       [connection :as sql-jdbc.conn]]))
 
 ;; Register Crossdata driver
 (driver/register! :crossdata, :parent :sql-jdbc)
@@ -15,17 +18,20 @@
   "Stratio Crossdata")
 
 
-(defmethod driver/can-connect? :crossdata [_ details]
-  )
+;(defmethod driver/can-connect? :crossdata [_ details]
+;  (log/debug "crossdata/can-connect? call")
+;  )
+
+(defmethod sql-jdbc.conn/connection-details->spec :crossdata [_ {:keys [host port dbname user ssl-option]
+                                                                 :or {host "localhost", port 13422, dbname "", user "crossdata-1"}
+                                                                 :as details}]
+  (println "sql-jdbc.conn/connection-details->spec. Host:" host "port:" port " details:" details)
+  (-> (merge {:classname "com.stratio.jdbc.core.jdbc4.StratioDriver"
+              :subprotocol "crossdata"
+              :subname (if ssl-option
+                         (str "//Server=" host ":" port ";UID=" user ";SSL=true;LogLevel=3;LogPath=/tmp/crossdata-jdbc-logs")
+                         (str "//Server=" host ":" port ";UID=" user ";LogLevel=3;LogPath=/tmp/crossdata-jdbc-logs"))}
+             (dissoc details :host :port :user :ssl :db :ssl-option))
+      (sql-jdbc.common/handle-additional-options details,:seperator-style :semicolon)))
 
 
-
-(defmethod sql-jdbc.conn/connection-details->spec :crossdata [_ details]
-  (-> details
-      (update :port (fn [port]
-                      (if (string? port)
-                        (Integer/parseInt port)
-                        port)))
-      (set/rename-keys {:dbname :db})
-      crossdata
-      (sql-jdbc.common/handle-additional-options details)))

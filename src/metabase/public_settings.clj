@@ -46,31 +46,31 @@
                      value))))
 
 (defsetting user-header
-  (tru "The header with the user to direct authentication.")
+  (deferred-tru "The header with the user to direct authentication.")
   :default "")
 
 (defsetting group-header
-  (tru "The header with the group to direct user creation and authentication.")
+  (deferred-tru "The header with the group to direct user creation and authentication.")
   :default "")
 
 (defsetting admin-group-header
-  (tru "The header with the collection of groups designed as administrators.")
+  (deferred-tru "The header with the collection of groups designed as administrators.")
   :default "")
 
 (defsetting group-header-delimiter
-  (tru "Character used as delimiter for group header parameter.")
+  (deferred-tru "Character used as delimiter for group header parameter.")
   :default ",")
 
 (defsetting init-admin-user
-  (tru "The init admin user created when the instance is initiated")
+  (deferred-tru "The init admin user created when the instance is initiated")
   :default "")
 
 (defsetting init-admin-mail
-  (tru "The init admin user mail created when the instance is initiated")
+  (deferred-tru "The init admin user mail created when the instance is initiated")
   :default "")
 
 (defsetting init-admin-password
-  (tru "The init admin user password created when the instance is initiated")
+  (deferred-tru "The init admin user password created when the instance is initiated")
   :default "")
 (defn- normalize-site-url [^String s]
   (let [ ;; remove trailing slashes

@@ -279,6 +279,10 @@
 (defn execute-query
   "Process and run a native (raw SQL) QUERY."
   [driver {settings :settings, query :native, :as outer-query}]
+
+  (log/debug settings query outer-query)
+  (log/debug (u/format-color 'cyan ("execute query-> settings:"settings " query:" query " outer-query:" outer-query)))
+
   (let [query (assoc query
                 :remark   (qputil/query->remark outer-query)
                 :max-rows (or (mbql.u/query->max-rows-limit outer-query) qp.i/absolute-max-results))]

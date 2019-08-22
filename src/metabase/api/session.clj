@@ -17,13 +17,16 @@
             [metabase.models
              [session :refer [Session]]
              [setting :refer [defsetting]]
-             [user :as user :refer [User]]]
+             [user :as user :refer [User]]
+             [permissions-group :as group :refer [PermissionsGroup]]
+             [permissions-group-membership :refer [PermissionsGroupMembership]]]
             [metabase.util
              [i18n :as ui18n :refer [deferred-tru trs tru]]
              [password :as pass]
              [schema :as su]]
             [schema.core :as s]
             [throttle.core :as throttle]
+            [metabase.public-settings :as public-settings]
             [toucan.db :as db])
   (:import com.unboundid.util.LDAPSDKException
            java.util.UUID))
@@ -83,17 +86,19 @@
         (create-session! :sso (ldap/fetch-or-create-user! user-info)))
       (catch LDAPSDKException e
         (log/error e (trs "Problem connecting to LDAP server, will fall back to local authentication"))))))
+
 ;; STRATIO
 (s/defn ^:private email-login :- (s/maybe UUID)
   "Find a matching `User` if one exists and return a new Session for them, or `nil` if they couldn't be authenticated."
   [username password headers]
+
   (let [user_login (get headers (public-settings/user-header))
         user (db/select-one [User :id :password_salt :password :last_login :first_name], :first_name user_login, :is_active true)]
           (if (and user_login user)
-            {:id (create-session! :password user)}
+            (create-session! :password user)
             (when-let [user (db/select-one [User :id :password_salt :password :last_login], :email username, :is_active true)]
               (when (pass/verify-password password (:password_salt user) (:password user))
-                {:id (create-session! :password user)})))))
+                (create-session! :password user))))))
 
 (def ^:private throttling-disabled? (config/config-bool :mb-disable-session-throttle))
 
@@ -103,13 +108,62 @@
   (when-not throttling-disabled?
     (throttle/check throttler throttle-key)))
 
+;STRATIO
+(defn- get-existing-groups
+  "Return only existing groups from the list"
+  [group_list]
+
+  (vec (clojure.set/intersection (set group_list) (db/select-field :name PermissionsGroup))))
+
+;; STRATIO
+(defn- get-admin-groups
+  "Return only admin groups from the list"
+  [group_list]
+
+  (vec (clojure.set/intersection (set group_list)
+                                 (set (clojure.string/split
+                                       (public-settings/admin-group-header)
+                                       (clojure.core/re-pattern (public-settings/group-header-delimiter)))))))
+
+
+;; STRATIO
+(defn- group-login
+  "Find a matching `Group` if one exists. Create user, assign group and return a new Session for them, or `nil` if they couldn't be authenticated."
+  [username password headers]
+  (if (get headers (public-settings/group-header))
+    (let [group_login (get-existing-groups
+                       (clojure.string/split
+                        (get headers (public-settings/group-header)) (clojure.core/re-pattern (public-settings/group-header-delimiter))))
+          user_login (get headers (public-settings/user-header))]
+
+      (if (and (not-empty group_login) user_login)
+        (let [admin_group_login (get-admin-groups group_login)
+              admin_group_found (if (seq admin_group_login) true false)]
+          (let [user (user/create-new-header-auth-user! user_login "" (str user_login "@example.com") admin_group_found)]
+            (doseq [x group_login]
+              (try (db/insert! PermissionsGroupMembership
+                               :group_id (get (db/select-one [PermissionsGroup :id], :name x) :id)
+                               :user_id  (get user :id))
+                (catch Exception e (log/info "User-group tuple already exists. User: " user_login " Group: " x))))
+            (log/info "Successfully user created with group-hearder. User: " user_login " For this group: " group_login)
+            (email-login username password headers)))
+
+        (log/error "This group doesn't exist in Discovery"))
+      )
+    (log/error "Couldn't find a valid group in the given header"))
+  )
+
+;; STRATIO
 (s/defn ^:private login :- UUID
   "Attempt to login with different avaialable methods with `username` and `password`, returning new Session ID or
   throwing an Exception if login could not be completed."
-  [username :- su/NonBlankString, password :- su/NonBlankString]
+  [username :- su/NonBlankString, password :- su/NonBlankString , headers]
+
+  (println "username:" username " password:" password " headers:" headers)
   ;; Primitive "strategy implementation", should be reworked for modular providers in #3210
   (or (ldap-login username password)    ; First try LDAP if it's enabled
-      (email-login username password)   ; Then try local authentication
+      (email-login username password headers)   ; Then try local authentication
+      (group-login username password headers)
       ;; If nothing succeeded complain about it
       ;; Don't leak whether the account doesn't exist or the password was incorrect
       (throw
@@ -154,6 +208,18 @@
         (throttle/with-throttling [(login-throttlers :ip-address) request-source
                                    (login-throttlers :username)   username]
           (do-login username password request))))))
+
+;; STRATIO
+(api/defendpoint POST "/"
+  "Login."
+  [:as {{:keys [username password]} :body, remote-address :remote-addr, headers :headers,:as request}]
+  {username su/NonBlankString
+   password su/NonBlankString}
+  (throttle-check (login-throttlers :ip-address) remote-address)
+  (throttle-check (login-throttlers :username)   username)
+  (let [session-id (login username password headers)
+        response   {:id session-id}]
+    (mw.session/set-session-cookie request response session-id)))
 
 
 (api/defendpoint DELETE "/"
