@@ -186,7 +186,7 @@
 (defn- run-query
   "Run the query itself."
   [driver {sql :query, :keys [params remark max-rows]}, ^TimeZone timezone, connection]
-  (let [sql              (str "-- " remark "\n" sql)
+  (let [--sql              (str "-- " remark "\n" sql)
         [columns & rows] (cancelable-run-query
                           connection sql params
                           {:identifiers    identity
@@ -256,6 +256,7 @@
     (jdbc/db-do-prepared connection [sql])))
 
 (defn- run-query-without-timezone [driver _ connection query]
+  (log/debug "execute.clj->run-query-without-timezone query:" query)
   (do-in-transaction connection (partial run-query driver query nil)))
 
 (defn- run-query-with-timezone [driver {:keys [^String report-timezone] :as settings} connection query]
@@ -280,8 +281,7 @@
   "Process and run a native (raw SQL) QUERY."
   [driver {settings :settings, query :native, :as outer-query}]
 
-  (log/debug settings query outer-query)
-  (log/debug (u/format-color 'cyan ("execute query-> settings:"settings " query:" query " outer-query:" outer-query)))
+  (log/debug "execute.clj->execute-query:" settings query outer-query)
 
   (let [query (assoc query
                 :remark   (qputil/query->remark outer-query)

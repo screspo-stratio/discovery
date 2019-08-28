@@ -35,19 +35,19 @@
             <AppenderRef ref="File" />
             <AppenderRef ref="Console" />
         </Logger>
-        <Logger name="metabase.query-processor" level="info" additivity="false">
+        <Logger name="metabase.query-processor" level="debug" additivity="false">
             <AppenderRef ref="File" />
             <AppenderRef ref="Console" />
         </Logger>
-        <Logger name="metabase.sync" level="info" additivity="false">
+        <Logger name="metabase.sync" level="debug" additivity="false">
             <AppenderRef ref="File" />
             <AppenderRef ref="Console" />
         </Logger>
-        <Logger name="metabase.models.field-values" level="info" additivity="false">
+        <Logger name="metabase.models.field-values" level="debug" additivity="false">
             <AppenderRef ref="File" />
             <AppenderRef ref="Console" />
         </Logger>
-        <Logger name="metabase" level="info" additivity="false">
+        <Logger name="metabase" level="debug" additivity="false">
             <AppenderRef ref="File" />
             <AppenderRef ref="Console" />
         </Logger>
