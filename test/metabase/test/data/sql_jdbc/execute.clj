@@ -27,7 +27,12 @@
             (println "Error executing SQL:" sql)
             (printf "Caught SQLException:\n%s\n"
                     (with-out-str (jdbc/print-sql-exception-chain e)))
-            (throw e))
+            ;; STRATIO -> el driver lanza una excepción con la sql que no son query (rowcount=0) y así evitamos
+            ;; que pare las pruebas aunque no es un error.
+            (if (not= (.getErrorCode e) 11320)
+              (throw e))
+            ;; FIN STRATIO
+            )
           (catch Throwable e
             (println "Error executing SQL:" sql)
             (printf "Caught Exception: %s %s\n%s\n" (class e) (.getMessage e)

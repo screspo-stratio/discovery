@@ -12,7 +12,7 @@
 (def ^:private dbs-exempt-from-format-rows-tests
   "DBs to skip the tests below for. TODO - why are so many databases not running these tests? Most of these should be
   able to pass with a few tweaks."
-  #{:oracle :mongo :redshift :presto :sparksql :snowflake})
+  #{:oracle :mongo :redshift :presto :sparksql :snowflake :crossdata})
 
 (qp.test/expect-with-non-timeseries-dbs-except dbs-exempt-from-format-rows-tests
   (if (= :sqlite driver/*driver*)

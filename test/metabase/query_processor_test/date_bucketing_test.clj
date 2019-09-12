@@ -162,7 +162,7 @@
 ;;
 ;; The exclusions here are databases that give incorrect answers when the JVM timezone doesn't match the databases
 ;; timezone
-(qp.test/expect-with-non-timeseries-dbs-except #{:h2 :sqlserver :redshift :sparksql :mongo}
+(qp.test/expect-with-non-timeseries-dbs-except #{:h2 :sqlserver :redshift :sparksql :mongo :crossdata}
   (cond
     (= :sqlite driver/*driver*)
     (sad-toucan-result (source-date-formatter utc-tz) result-date-formatter-without-tz)
@@ -441,7 +441,7 @@
 ;;
 ;; The exclusions here are databases that give incorrect answers when the JVM timezone doesn't match the databases
 ;; timezone
-(qp.test/expect-with-non-timeseries-dbs-except #{:h2 :sqlserver :redshift :sparksql :mongo}
+(qp.test/expect-with-non-timeseries-dbs-except #{:h2 :sqlserver :redshift :sparksql :mongo :crossdata}
   (cond
     (= :sqlite driver/*driver*)
     (results-by-day date-formatter-without-time
@@ -631,7 +631,7 @@
 ;;
 ;; The exclusions here are databases that give incorrect answers when the JVM timezone doesn't match the databases
 ;; timezone
-(qp.test/expect-with-non-timeseries-dbs-except #{:h2 :sqlserver :redshift :sparksql :mongo}
+(qp.test/expect-with-non-timeseries-dbs-except #{:h2 :sqlserver :redshift :sparksql :mongo :crossdata}
   (cond
     (= :sqlite driver/*driver*)
     (results-by-week date-formatter-without-time
@@ -667,7 +667,7 @@
     (= :snowflake driver/*driver*)
     [[22 46] [23 47] [24 40] [25 60] [26 7]]
 
-    (#{:sqlserver :sqlite :oracle :sparksql} driver/*driver*)
+    (#{:sqlserver :sqlite :oracle :sparksql :crossdata} driver/*driver*)
     [[23 54] [24 46] [25 39] [26 61]]
 
     (and (supports-report-timezone? driver/*driver*)

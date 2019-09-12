@@ -27,7 +27,9 @@
        [sync :as sql-jdbc.sync]]
       [metabase.driver.sql.util.unprepare :as unprepare]
       [toucan.db :as db]
-      [metabase.util.honeysql-extensions :as hx])
+      [metabase.util
+       [honeysql-extensions :as hx]
+       [date :as du]] )
   (:import [java.sql PreparedStatement Time] java.util.Date))
 
 ;; Register Crossdata driver
@@ -163,4 +165,70 @@
 
 (defmethod driver/supports? [:crossdata :foreign-keys] [_ _] true)
 
+
+
+
+(defmethod sql.qp/current-datetime-fn :crossdata [_] :%now)
+
+(defmethod sql.qp/unix-timestamp->timestamp [:crossdata :seconds] [_ _ expr]
+  (hx/->timestamp (hsql/call :from_unixtime expr)))
+
+(defn- date-format [format-str expr]
+  (hsql/call :date_format expr (hx/literal format-str)))
+
+(defn- str-to-date [format-str expr]
+  (hx/->timestamp
+   (hsql/call :from_unixtime
+              (hsql/call :unix_timestamp
+                         expr (hx/literal format-str)))))
+
+(defmethod driver/date-add :crossdata [_ dt amount unit]
+  (hx/+ (hx/->timestamp dt) (hsql/raw (format "(INTERVAL '%d' %s)" (int amount) (name unit)))))
+
+
+(defn- trunc-with-format [format-str expr]
+  (str-to-date format-str (date-format format-str expr)))
 (defmethod sql.qp/quote-style :crossdata [_] :mysql)
+(defmethod sql.qp/date [:crossdata :day]             [_ _ expr] (trunc-with-format "yyyy-MM-dd" (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :minute]          [_ _ expr] (trunc-with-format "yyyy-MM-dd HH:mm" (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :minute-of-hour]  [_ _ expr] (hsql/call :minute (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :hour]            [_ _ expr] (trunc-with-format "yyyy-MM-dd HH" (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :hour-of-day]     [_ _ expr] (hsql/call :hour (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :day]             [_ _ expr] (trunc-with-format "yyyy-MM-dd" (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :day-of-month]    [_ _ expr] (hsql/call :dayofmonth (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :day-of-year]     [_ _ expr] (hx/->integer (date-format "D" (hx/->timestamp expr))))
+(defmethod sql.qp/date [:crossdata :week-of-year]    [_ _ expr] (hsql/call :weekofyear (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :month]           [_ _ expr] (hsql/call :trunc (hx/->timestamp expr) (hx/literal :MM)))
+(defmethod sql.qp/date [:crossdata :month-of-year]   [_ _ expr] (hsql/call :month (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :quarter-of-year] [_ _ expr] (hsql/call :quarter (hx/->timestamp expr)))
+(defmethod sql.qp/date [:crossdata :year]            [_ _ expr] (hsql/call :trunc (hx/->timestamp expr) (hx/literal :year)))
+
+(defmethod sql.qp/date [:crossdata :day-of-week] [_ _ expr]
+  (hx/->integer (date-format "u"
+                             (hx/+ (hx/->timestamp expr)
+                                   (hsql/raw "interval '1' day")))))
+
+(defmethod sql.qp/date [:crossdata :week] [_ _ expr]
+  (hsql/call :date_sub
+             (hx/+ (hx/->timestamp expr)
+                   (hsql/raw "interval '1' day"))
+             (date-format "u"
+                          (hx/+ (hx/->timestamp expr)
+                                (hsql/raw "interval '1' day")))))
+
+(defmethod sql.qp/date [:crossdata :quarter] [_ _ expr]
+  (hsql/call :add_months
+             (hsql/call :trunc (hx/->timestamp expr) (hx/literal :year))
+             (hx/* (hx/- (hsql/call :quarter (hx/->timestamp expr))
+                         1)
+                   3)))
+
+
+(defmethod unprepare/unprepare-value [:crossdata Date] [_ value]
+  (hformat/to-sql
+   (hsql/call :from_unixtime
+              (hsql/call :unix_timestamp
+                         (hx/literal (du/date->iso-8601 value))
+                         (hx/literal "yyyy-MM-dd\\\\'T\\\\'HH:mm:ss.SSS\\\\'Z\\\\'")))))
+
+(prefer-method unprepare/unprepare-value [:sql Time] [:crossdata Date])
