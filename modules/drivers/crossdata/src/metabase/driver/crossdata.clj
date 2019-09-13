@@ -105,6 +105,21 @@
     (h/from honeysql-form [(sql.qp/->honeysql driver (hx/identifier :table schema table-name))
                            (sql.qp/->honeysql driver (hx/identifier :table-alias source-table-alias))])))
 
+(defmethod sql.qp/apply-top-level-clause [:crossdata :page] [_ _ honeysql-form {{:keys [items page]} :page}]
+           (let [offset (* (dec page) items)]
+                (if (zero? offset)
+                  ;; if there's no offset we can simply use limit
+                  (h/limit honeysql-form items)
+                  ;; if we need to do an offset we have to do nesting to generate a row number and where on that
+                  (let [over-clause (format "row_number() OVER (%s)"
+                                            (first (hsql/format (select-keys honeysql-form [:order-by])
+                                                                :allow-dashed-names? true
+                                                                :quoting :mysql)))]
+                       (-> (apply h/select (map last (:select honeysql-form)))
+                           (h/from (h/merge-select honeysql-form [(hsql/raw over-clause) :__rownum__]))
+                           (h/where [:> :__rownum__ offset])
+                           (h/limit items))))))
+
 ;; refresh values in Metabase cache
 (defmethod driver/describe-table :crossdata
   [driver {:keys [details] :as database} {table-name :name, schema :schema, :as table}]
