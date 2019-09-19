@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.34.0 (August 08, 2019)
+## 0.34.0 (September 19, 2019)
 
 * [ROCK-459] Fix error with Decimal types in Crossdata2 driver
 * [ROCK-475] Fix "Discovery goes down while testing stability"
