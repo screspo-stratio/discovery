@@ -15,7 +15,8 @@
             [schema.core :as s]
             [toucan
              [db :as db]
-             [hydrate :refer [hydrate]]])
+             [hydrate :refer [hydrate]]]
+            [cheshire.core :as json])
   (:import java.text.NumberFormat))
 
 ;;; --------------------------------------------- Basic CRUD Operations ----------------------------------------------
@@ -165,11 +166,111 @@
         (dissoc :human_readable_values :created_at :updated_at :id))
     {:values [], :field_id (:id field)}))
 
+(defn- table-id [field]
+  (u/get-id (:table_id field)))
+
+(defn- db-id [field]
+  (u/get-id (db/select-one-field :db_id Table :id (table-id field))))
+
+;; STRATIO ;;;;;;;;;
+
+;; Generate the where clausule
+;; in -> {:id id, :value ["a","b"]}
+;; out -> [:= name_field set-values]
+(defn generate-in-clause
+  [field-to-filter field-values & more-field-id-values]
+
+  (if (nil? more-field-id-values)
+    (do
+      (let [values-filter (field-values :values)]
+        (if (= (count values-filter) 1)
+          [:= [:field-id (field-values :id)] (first (field-values :values))]
+          (apply vector :or (for [x values-filter]
+                              [:= [:field-id (field-values :id)] x])))))
+    (do
+      (apply vector :and (generate-in-clause field-to-filter more-field-id-values)))
+    )
+  )
+
+
+; in -> {"filter-field-values":[{"id":12729,"value":"LAVANDERIA"}]}
+; out -> [:= [:field-id id] [["ASEO"] ["ESPACIO TRABAJO"]]]
+(defn where-from-json
+  [field-to-filter json-values]
+  (as-> (json/parse-string json-values true) values-in-filter
+        (apply generate-in-clause field-to-filter (values-in-filter :filter-field-values)))
+  )
+
+;; Get values of field with a filter of additional values.
+;; in -> where_values -> {"filter-field-values":[{"id":12729,"value":"LAVANDERIA"}]}
+;; out -> [("a"),("b"),("c"),...]
+(defn field->values_with_where
+  [field-to-filter where_values]
+
+  (println "---------------------------------------")
+  (println "función field->values_with_where")
+  (println "field:" field-to-filter)
+  (println "where_values" where_values)
+  (println "parseJson: " (json/parse-string where_values true))
+  (println "json-generate-where:" (where-from-json field-to-filter where_values))
+
+  ; json to map  {:field-field-values [{:id 12729, :values [LAVANDERIA]}]}
+  (let [map_values_in_where (where-from-json field-to-filter where_values)
+        rows-query (qp/process-query
+                    {:database (db-id field-to-filter)
+                     :type     :query
+                     :query    {:source-table (table-id field-to-filter)
+                                ;:aggregation [:distinct [:field-id (u/get-id field)]]
+                                :filter       map_values_in_where
+                                ;:filter       [:or [:contains [:field-id 12729] "LAVANDERIA"]
+                                ;               [:contains [:field-id 12729] "COCINA"]]
+                                :fields       [[:field-id (u/get-id field-to-filter)]]
+                                :breakout     [[:field-id (u/get-id field-to-filter)]]
+                                }})
+        rows    (get-in rows-query [:data :rows])]
+
+    (map conj rows)))
+
+;(api/defendpoint GET "/:id/values"
+;  "If a Field's value of `has_field_values` is `list`, return a list of all the distinct values of the Field, and (if
+;  defined by a User) a map of human-readable remapped values."
+;  [id]
+;  (field->values (api/read-check Field id)))
+
+
+;;;;; STRATIO ;;;;;;;;;;;;;;;
+;; /api/field/:id/values?field_values={"field_values":[{"id":12729,"value":"LAVANDERIA"}]} -> it returns the values filtering with other_filter if it
+;; is possible.
+;; out -> [:values [["a"],["b"],...],:field_id (:id field)]
 (api/defendpoint GET "/:id/values"
   "If a Field's value of `has_field_values` is `list`, return a list of all the distinct values of the Field, and (if
   defined by a User) a map of human-readable remapped values."
-  [id]
-  (field->values (api/read-check Field id)))
+  [id filter-field-values]
+  {filter-field-values (s/maybe su/JSONString)}
+  (println "Obteniendo los values para un field" id filter-field-values)
+  (println (Field id))
+  (if (nil? filter-field-values)
+    ; there is not field values
+    (field->values (api/read-check Field id))
+    ; there are some field values from other dashboard filters
+    (let [field (Field id)]
+      {:values (field->values_with_where field filter-field-values) :field_id id}
+      )
+
+
+    ; Caso en el que hay que revisar los valores de los otros filtros si impactan en los valores de este campo/filtro
+    ; Recibimos la llamada /api/field/:id/values?"field_id"=value1,value2,...&"field2_id"=value1,...
+    ; 1. Por cada campo con valor de filtro que viene en el endpoint como parámetro
+    ;   1.1 Cogemos el primer parámetro, y sacamos su tabla
+    ;   1.2 Vemos si esa tabla tiene una fk hacia la tabla del field :id principal
+    ;   1.3 Si tiene fk entonces creamos la query:
+    ;     select distinct "fild_:id" from table_field_:id where fk in (value1,value2,...)
+
+    )
+
+
+  )
+;;;;;;stratio;;;;;;;;;;;;;;;;
 
 ;; match things like GET /field-literal%2Ccreated_at%2Ctype%2FDatetime/values
 ;; (this is how things like [field-literal,created_at,type/Datetime] look when URL-encoded)
@@ -241,11 +342,11 @@
 
 ;;; --------------------------------------------------- Searching ----------------------------------------------------
 
-(defn- table-id [field]
-  (u/get-id (:table_id field)))
+;(defn- table-id [field]
+;  (u/get-id (:table_id field)))
 
-(defn- db-id [field]
-  (u/get-id (db/select-one-field :db_id Table :id (table-id field))))
+;(defn- db-id [field]
+;  (u/get-id (db/select-one-field :db_id Table :id (table-id field))))
 
 (defn- follow-fks
   "Automatically follow the target IDs in an FK `field` until we reach the PK it points to, and return that. For
