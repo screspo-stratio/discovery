@@ -194,7 +194,7 @@
 ;; out -> fk in destination-table from origin-table
 (defn get-fk
   [table-origin table-destination]
-  (println "get-fk:" table-origin table-destination)
+
   (if-let [pks-table-origin (db/select-one Field, :table_id table-origin, :special_type "type/PK" )]
     (db/select-one Field, :table_id table-destination, :fk_target_field_id (pks-table-origin :id))
     )
@@ -204,25 +204,19 @@
 ;;        if several values -> [:or [:= [:field-id field-id] "value"]] [:= [:field-id field-id] "value"]]]
 (defn filter-clause-with-values
   [field-id values]
-  (println "filter-clause-with-values:" field-id " and values: " values)
+
   (if (= (count values) 1)
     [:= [:field-id field-id] (first values)]
     (apply vector :or (for [x values]
                         [:= [:field-id field-id] x])))
   )
 
-;; Get values of pk from other field in the same table (select id from table where field in (values))
-;; in -> Field , {:id id, :value ["a","b"]} where the field is not pk (type Id)
-;; out -> Field {:id id, :value ["h","j"]} where the field is pk and values are coming from entry field
-(defn get-field-pk-with-values
-  [field-category-with-values]
+; in -> field of a table, field-catagory-with-values as [:id 3,:values ["a","b",...]
+; out -> result of query {:data {:rows (.....values....)}}
+(defn get-field-with-fieldvalues
+  [field field-category-with-values]
 
   (let [field-category-entity (Field (field-category-with-values :id))]
-    (println (table-id field-category-entity))
-    (println "pk-field-id:" (table/pk-field-id (Table (table-id field-category-entity))))
-    (println "field-category-with-values:" field-category-with-values)
-    (println "get-field-pk-with-values->field-category-entity:" field-category-entity)
-
     (qp/process-query
      {:database (db-id field-category-entity)
       :type     :query
@@ -230,11 +224,12 @@
                  :filter       (filter-clause-with-values (field-category-with-values :id) (field-category-with-values :values))
                  ;:filter       [:or [:contains [:field-id 12729] "LAVANDERIA"]
                  ;               [:contains [:field-id 12729] "COCINA"]]
-                 :fields       [[:field-id (table/pk-field-id (Table (table-id field-category-entity)))]]
+                 :fields       [[:field-id (:id field)]]
                  :middleware {:format-rows?           false
                               :skip-results-metadata? true}
                  }}))
   )
+
 
 ;; Generate the where clausule for a field filter in dashboard taking account the values of other filters in the
 ;; dashboard.
@@ -243,7 +238,6 @@
 (defn generate-in-clause
   [field-to-filter field-with-values & more-field-id-values]
 
-  (println "more-field-id-values:" more-field-id-values)
   (if (nil? more-field-id-values)
     (let [field-with-values-entity (Field (field-with-values :id))
           values-filter (field-with-values :values)]
@@ -252,14 +246,20 @@
         (filter-clause-with-values (field-with-values :id) values-filter)
         (do
           ; different table from filter and field-value-id is not :TypeId
-          (if-let [fk-field (get-fk (table-id field-with-values-entity) (table-id field-to-filter))]
-            (do
-              (if (= (fk-field :fk_target_field_id) (field-with-values-entity :id))
-                ; field with values is Pk (typeId)
-                (filter-clause-with-values (fk-field :id) values-filter)
-                (let [rows (get-in (get-field-pk-with-values field-with-values) [:data :rows])]
-                  (filter-clause-with-values (fk-field :id) (flatten rows)) ;field with values is not pk
-                  )
+          ; fk in table of field to filter
+          (if-let [fk-field-in-field-to-filter (get-fk (table-id field-with-values-entity) (table-id field-to-filter))]
+            (if (= (fk-field-in-field-to-filter :fk_target_field_id) (field-with-values-entity :id))
+              ; field with values is Pk (typeId)
+              (filter-clause-with-values (fk-field-in-field-to-filter :id) values-filter)
+              (let [rows (get-in (get-field-with-fieldvalues (Field (table/pk-field-id (Table (table-id field-with-values-entity)))) field-with-values) [:data :rows])]
+                ;field with values is not pk
+                (filter-clause-with-values (fk-field-in-field-to-filter :id) (flatten rows))
+                )
+              )
+            ; fk in table of field with values
+            (if-let [fk-field-in-field-with-values (get-fk (table-id field-to-filter) (table-id field-with-values-entity))]
+              (let [rows (get-in (get-field-with-fieldvalues fk-field-in-field-with-values field-with-values) [:data :rows])]
+                (filter-clause-with-values (table/pk-field-id (Table (table-id field-to-filter))) (flatten rows)) ;field with values is not pk
                 )
               )
             )
@@ -287,9 +287,9 @@
   [field-to-filter where_values]
 
   (log/debug (trs "función field->values_with_where"))
-  (log/debug (trs "field {0}" field-to-filter))
-  (log/debug (trs "where_values" where_values))
-  (log/debug (trs "parseJson: " (json/parse-string where_values true)))
+  ;(log/debug (trs "field to filter {0}" field-to-filter))
+  ;(log/debug (trs "where_values" where_values))
+  ;(log/debug (trs "parseJson: " (json/parse-string where_values true)))
 
   ; json to map  {:field-field-values [{:id 12729, :values [LAVANDERIA]}]}
   (let [map_values_in_where (where-from-json field-to-filter where_values)
@@ -306,7 +306,9 @@
                                 }})
         rows    (get-in rows-query [:data :rows])]
 
-    (map conj rows)))
+    ;(map conj rows)
+    (flatten rows)
+    ))
 
 ;(api/defendpoint GET "/:id/values"
 ;  "If a Field's value of `has_field_values` is `list`, return a list of all the distinct values of the Field, and (if
