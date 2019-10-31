@@ -6,6 +6,7 @@
              [query-processor :as qp]
              [related :as related]
              [util :as u]]
+            [metabase.query-processor.middleware.parameters.dates :as dates]
             [metabase.api.common :as api]
             [metabase.db.metadata-queries :as metadata]
             [metabase.models
@@ -18,7 +19,8 @@
             [toucan
              [db :as db]
              [hydrate :refer [hydrate]]]
-            [cheshire.core :as json])
+            [cheshire.core :as json]
+            )
   (:import java.text.NumberFormat))
 
 ;;; --------------------------------------------- Basic CRUD Operations ----------------------------------------------
@@ -199,16 +201,31 @@
     (db/select-one Field, :table_id table-destination, :fk_target_field_id (pks-table-origin :id))
     )
   )
+
+(defn date?
+  "Is field a datetime?"
+  [{:keys [base_type]}]
+  (isa? base_type :type/DateTime))
+
 ;; in -> field id (integer), values ["a","b",...]
 ;; out -> if one value -> [:= [:field-id field-id] "value"]]
 ;;        if several values -> [:or [:= [:field-id field-id] "value"]] [:= [:field-id field-id] "value"]]]
 (defn filter-clause-with-values
   [field-id values]
 
-  (if (= (count values) 1)
-    [:= [:field-id field-id] (first values)]
-    (apply vector :or (for [x values]
-                        [:= [:field-id field-id] x])))
+  (let [field-entity (Field field-id)]
+    (if (date? (Field field-id))
+      ;; Field is a datetime. The values should be only one element, the date.
+      (dates/date-string->filter (first values) [:field-literal (:name field-entity) (:base_type field-entity)])
+      ;; String, Number
+      (if (= (count values) 1)
+        [:= [:field-id field-id] (first values)]
+        (apply vector :or (for [x values]
+                            [:= [:field-id field-id] x])))
+
+      )
+
+    )
   )
 
 ; in -> field of a table, field-catagory-with-values as [:id 3,:values ["a","b",...]

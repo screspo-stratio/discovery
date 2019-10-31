@@ -200,6 +200,18 @@
                                                  "/values?filter-field-values={\"filter-field-values\":[{\"id\":"
                                                  (data/id :categories :name) ",\"values\":[\"Burger\"]}]}" )))
 
+;;
+(expect
+ {:values ["Conchúr Tihomir" "Dwight Gresham" "Rüstem Hebel" "Shad Ferdynand"], :field_id (data/id :users :name)}
+ ;{:values [], :field_id (data/id :venues :name)}
+ ; ((test-users/user->client :rasta) :get 200 (format "field/%d/values?filter-field-values={\"filter-field-values\":[{\"id\":345,\"values\":[\"Burguer\"]}]}" (data/id :venues :name)
+ ;                                                    )))
+ ((test-users/user->client :rasta) :get 200 (str "field/" (data/id :users :name)
+                                                 "/values?filter-field-values={\"filter-field-values\":[{\"id\":"
+                                                 (data/id :users :last_login) ",\"values\":[\"2014-08\"]}]}" )))
+
+
+
 ;;;----------------stratio----------------------
 
 ;;; ------------------------------------------- POST /api/field/:id/values -------------------------------------------
