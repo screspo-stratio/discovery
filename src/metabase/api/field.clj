@@ -291,7 +291,7 @@
 
 ; in -> Field to filter, {"filter-field-values":[{"id":12729,"value":"LAVANDERIA"}]}
 ; out -> [:= [:field-id id] [["ASEO"] ["ESPACIO TRABAJO"]]]
-(defn where-from-json
+(defn filter-from-json
   [field-to-filter json-values]
   (as-> (json/parse-string json-values true) values-in-filter
         (apply generate-in-clause field-to-filter (values-in-filter :filter-field-values)))
@@ -309,13 +309,13 @@
   ;(log/debug (trs "parseJson: " (json/parse-string where_values true)))
 
   ; json to map  {:field-field-values [{:id 12729, :values [LAVANDERIA]}]}
-  (let [map_values_in_where (where-from-json field-to-filter where_values)
+  (let [map_values_in_filter (filter-from-json field-to-filter where_values)
         rows-query (qp/process-query
                     {:database (db-id field-to-filter)
                      :type     :query
                      :query    {:source-table (table-id field-to-filter)
                                 ;:aggregation [:distinct [:field-id (u/get-id field)]]
-                                :filter       map_values_in_where
+                                :filter       map_values_in_filter
                                 ;:filter       [:or [:contains [:field-id 12729] "LAVANDERIA"]
                                 ;               [:contains [:field-id 12729] "COCINA"]]
                                 :fields       [[:field-id (u/get-id field-to-filter)]]
