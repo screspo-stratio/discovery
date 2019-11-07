@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.34.1 (upcoming)
+## 0.34.1 (November 07, 2019)
 
 * [ROCK-459] Fix the compatibility error with Datio descriptor and TENANT_NAME env variable
 
