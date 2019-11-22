@@ -20,7 +20,7 @@
 
     <groupId>com.stratio.schema</groupId>
     <artifactId>discovery</artifactId>
-    <version>0.34.1-${revision}</version>
+    <version>0.34.1-SNAPSHOT</version>
     <name>discovery</name>
 
     <build>
