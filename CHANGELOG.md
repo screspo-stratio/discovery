@@ -1,15 +1,17 @@
 # Changelog
 
-## 0.35.0 (upcoming)
+## 0.36.0 (upcoming)
+
+* Pending changelog
+
+## 0.35.0-db40b8f (Built: November 25, 2019 | Pre-release)
 
 * Logs in Datacentric standard format
 * Avoid Discovery checks Crossdata connection each 3 mins
 * [ROCK-459] Maintaining the compatibility with Datio descriptor in Stratio scripts about service 
   instance (DISCOVERY_INSTANCE_NAME)
 * Upgrade to Metabase 0.33.2
-* New Crossdata driver as a plugin 
-
-
+* New Crossdata driver as a plugin
 
 ## 0.34.0-7f4b16c (Built: September 19, 2019 | Released: September 20, 2019)
 
