@@ -11,7 +11,7 @@ import LoadingSpinner from "metabase/components/LoadingSpinner";
 import AutoExpanding from "metabase/hoc/AutoExpanding";
 
 import { MetabaseApi } from "metabase/services";
-import { addRemappings, fetchFieldValues } from "metabase/redux/metadata";
+import { addRemappings, fetchFilterFieldValues } from "metabase/redux/metadata";
 import { defer } from "metabase/lib/promise";
 import { debounce } from "underscore";
 import { stripId } from "metabase/lib/formatting";
@@ -26,7 +26,7 @@ const MAX_SEARCH_RESULTS = 100;
 
 const mapDispatchToProps = {
   addRemappings,
-  fetchFieldValues,
+  fetchFilterFieldValues,
 };
 
 type Props = {
@@ -37,7 +37,7 @@ type Props = {
   multi?: boolean,
   autoFocus?: boolean,
   color?: string,
-  fetchFieldValues: (id: FieldId) => void,
+  fetchFilterFieldValues: (id: FieldId) => void,
   maxResults: number,
   style?: { [key: string]: string | number },
   placeholder?: string,
@@ -82,9 +82,9 @@ export class FieldValuesWidget extends Component {
   };
 
   componentWillMount() {
-    const { field, fetchFieldValues } = this.props;
+    const { field, fetchFilterFieldValues } = this.props;
     if (field.has_field_values === "list") {
-      fetchFieldValues(field.id);
+      fetchFilterFieldValues(field.id, {c:'c'});
     }
   }
 
@@ -219,6 +219,7 @@ export class FieldValuesWidget extends Component {
   }
 
   render() {
+    console.log('soy field values widget!!!');
     const {
       value,
       onChange,

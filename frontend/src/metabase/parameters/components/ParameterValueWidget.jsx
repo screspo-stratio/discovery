@@ -17,7 +17,7 @@ import CategoryWidget from "./widgets/CategoryWidget";
 import TextWidget from "./widgets/TextWidget";
 import ParameterFieldWidget from "./widgets/ParameterFieldWidget";
 
-import { fetchField, fetchFieldValues } from "metabase/redux/metadata";
+import { fetchField, fetchFilterFieldValues } from "metabase/redux/metadata";
 import {
   getMetadata,
   makeGetMergedParameterFieldValues,
@@ -49,7 +49,7 @@ const makeMapStateToProps = () => {
 };
 
 const mapDispatchToProps = {
-  fetchFieldValues,
+  fetchFilterFieldValues,
   fetchField,
 };
 
@@ -128,7 +128,7 @@ export default class ParameterValueWidget extends Component {
   updateFieldValues(props) {
     for (const id of this.fieldIds(props)) {
       props.fetchField(id);
-      props.fetchFieldValues(id);
+      props.fetchFilterFieldValues(id, {a:'a', b: 'b'});
     }
   }
 

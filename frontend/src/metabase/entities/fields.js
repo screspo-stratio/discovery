@@ -22,6 +22,7 @@ import { TYPE } from "metabase/lib/types";
 // ADDITIONAL OBJECT ACTIONS
 
 export const FETCH_FIELD_VALUES = "metabase/entities/fields/FETCH_FIELD_VALUES";
+export const FETCH_FILTER_FIELD_VALUES = "metabase/entities/fields/FETCH_FILTERED_FIELD_VALUES";
 export const UPDATE_FIELD_VALUES =
   "metabase/entities/fields/UPDATE_FIELD_VALUES";
 export const DELETE_FIELD_DIMENSION =
@@ -54,6 +55,19 @@ export default createEntity({
           getData: () => MetabaseApi.field_values({ fieldId: id }),
           reload,
         }),
+    ),
+
+    fetchFilterFieldValues: createThunkAction(
+      FETCH_FILTER_FIELD_VALUES,
+      ({ id, filters }, reload) => (dispatch, getState) =>
+        fetchData({
+          dispatch,
+          getState,
+          requestStatePath: ["entities", "fields", id, "filterValues"],
+          existingStatePath: ["entities", "fields", id, "filterValues"],
+          getData: () => MetabaseApi.filter_field_values(id,filters)({ fieldId: id }),
+          reload
+        })
     ),
 
     // Docstring from m.api.field:
