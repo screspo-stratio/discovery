@@ -144,7 +144,8 @@ export const fetchFieldValues = (id, reload = false) => {
   return Fields.actions.fetchFieldValues({ id }, reload);
 };
 
-export const fetchFilterFieldValues = (id, filters, reload = false) => {
+export const FETCH_FILTER_FIELD_VALUES = Fields.actions.fetchFilterFieldValues.toString();
+export const fetchFilterFieldValues = (id, filters, reload = true) => {
   return Fields.actions.fetchFilterFieldValues({ id, filters }, reload);
 };
 

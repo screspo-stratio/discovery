@@ -125,16 +125,46 @@ export default class ParameterValueWidget extends Component {
     }
   }
 
+  _getPosFilter(parameters, fieldId) {
+    let paramIndex;
+    parameters.forEach((param,i) => {
+      if (param.field_ids[0] === fieldId) {
+        paramIndex = i;
+        return;
+      }
+    });
+    return paramIndex;
+  }
+
+  _genQueryFilter(parameters, posField) {
+    if (posField > 0) {
+      let filters = { "filter-field-values": [] };
+      let urlParams = new URLSearchParams(window.location.search);
+      for (var i = 0; i < posField; i++) {
+        let parameter = parameters[i];
+        let filterValues = urlParams.getAll(parameter.slug);
+        let filter = { id: parameter.field_ids[0], values: filterValues };
+        filters["filter-field-values"].push(filter);
+      }
+      return filters;
+    }
+    return null;
+  }
+
   updateFieldValues(props) {
+    const { parameters, parameter } = props;
+    const posFilter = this._getPosFilter(parameters, parameter.field_ids[0]);
+    const queryFilter = this._genQueryFilter(parameters, posFilter);
     for (const id of this.fieldIds(props)) {
       props.fetchField(id);
-      props.fetchFilterFieldValues(id, {a:'a', b: 'b'});
+      props.fetchFilterFieldValues(id, queryFilter);
     }
   }
 
   render() {
     const {
       parameter,
+      parameters,
       value,
       values,
       setValue,
@@ -229,6 +259,7 @@ export default class ParameterValueWidget extends Component {
           {getParameterTypeIcon()}
           <Widget
             placeholder={placeholder}
+            parameters={parameters}
             value={value}
             values={values}
             field={this.getSingleField()}

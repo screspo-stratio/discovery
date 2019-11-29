@@ -81,10 +81,41 @@ export class FieldValuesWidget extends Component {
     maxWidth: 500,
   };
 
+  _getPosFilter(parameters, fieldId) {
+    let paramIndex;
+    parameters && parameters.forEach((param,i) => {
+      if (param.field_id === fieldId) {
+        paramIndex = i;
+        return;
+      }
+    });
+    return paramIndex;
+  }
+
+  _genQueryFilter(parameters, posField) {
+    if (posField !== 0) {
+      let filters = { "filter-field-values": [] };
+      let urlParams = new URLSearchParams(window.location.search);
+      for (var i = 0; i < posField; i++) {
+        let parameter = parameters[i];
+        let filterValues = urlParams.getAll(parameter.slug);
+        let filter = { id: parameter.field_id, values: filterValues };
+        filters["filter-field-values"].push(filter);
+      }
+      return filters;
+    }
+    return null;
+  }
+
   componentWillMount() {
-    const { field, fetchFilterFieldValues } = this.props;
+    const { field, parameters, fetchFilterFieldValues } = this.props;
     if (field.has_field_values === "list") {
-      fetchFilterFieldValues(field.id, {c:'c'});
+      let queryFilter = null;
+      if (parameters) {
+        const posFilter = this._getPosFilter(parameters, field.id);
+        queryFilter = this._genQueryFilter(parameters, posFilter);
+      }
+      fetchFilterFieldValues(field.id, queryFilter);
     }
   }
 
@@ -219,7 +250,6 @@ export class FieldValuesWidget extends Component {
   }
 
   render() {
-    console.log('soy field values widget!!!');
     const {
       value,
       onChange,

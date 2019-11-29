@@ -59,15 +59,16 @@ export default createEntity({
 
     fetchFilterFieldValues: createThunkAction(
       FETCH_FILTER_FIELD_VALUES,
-      ({ id, filters }, reload) => (dispatch, getState) =>
-        fetchData({
+      ({ id, filters }, reload) => (dispatch, getState) => {
+        return fetchData({
           dispatch,
           getState,
-          requestStatePath: ["entities", "fields", id, "filterValues"],
-          existingStatePath: ["entities", "fields", id, "filterValues"],
-          getData: () => MetabaseApi.filter_field_values(id,filters)({ fieldId: id }),
-          reload
+          requestStatePath: ["entities", "fields", id, "values"],
+          existingStatePath: ["entities", "fields", id, "values"],
+          getData: () => MetabaseApi.filter_field_values(id, filters)({ fieldId: id }),
+          reload,
         })
+      }
     ),
 
     // Docstring from m.api.field:
@@ -140,6 +141,16 @@ export default createEntity({
                 [fieldValues.field_id, "values"],
                 fieldValues.values,
               )
+            : state,
+      },
+      [FETCH_FILTER_FIELD_VALUES]: {
+        next: (state, { payload: fieldValues }) =>
+          fieldValues
+            ? assocIn(
+            state,
+            [fieldValues.field_id, "values"],
+            fieldValues.values,
+            )
             : state,
       },
       [ADD_PARAM_VALUES]: {
