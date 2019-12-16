@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.34.2 (upcoming)
+## 0.34.2 (December 16, 2019)
 
 * [ROCK-629] Add JWT authentication
 
