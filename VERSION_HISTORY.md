@@ -3,6 +3,8 @@
 
 #### 0.35.0-db40b8f (Built: November 25, 2019 | Pre-release)
 
+#### 0.34.2-c8d0bd1 (Built: December 16, 2019 | Pre-release)
+
 #### 0.34.1-f4d6a91 (Built: November 22, 2019 | Released: November 27, 2019)
 
 #### 0.34.0-7f4b16c (Built: September 19, 2019 | Released: September 20, 2019)
