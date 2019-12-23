@@ -11,7 +11,7 @@ import LoadingSpinner from "metabase/components/LoadingSpinner";
 import AutoExpanding from "metabase/hoc/AutoExpanding";
 
 import { MetabaseApi } from "metabase/services";
-import { addRemappings, fetchFieldValues } from "metabase/redux/metadata";
+import { addRemappings, fetchFilterFieldValues } from "metabase/redux/metadata";
 import { defer } from "metabase/lib/promise";
 import { debounce } from "underscore";
 import { stripId } from "metabase/lib/formatting";
@@ -26,7 +26,7 @@ const MAX_SEARCH_RESULTS = 100;
 
 const mapDispatchToProps = {
   addRemappings,
-  fetchFieldValues,
+  fetchFilterFieldValues,
 };
 
 type Props = {
@@ -37,7 +37,7 @@ type Props = {
   multi?: boolean,
   autoFocus?: boolean,
   color?: string,
-  fetchFieldValues: (id: FieldId) => void,
+  fetchFilterFieldValues: (id: FieldId) => void,
   maxResults: number,
   style?: { [key: string]: string | number },
   placeholder?: string,
@@ -81,10 +81,41 @@ export class FieldValuesWidget extends Component {
     maxWidth: 500,
   };
 
+  _getPosFilter(parameters, fieldId) {
+    let paramIndex;
+    parameters && parameters.forEach((param,i) => {
+      if (param.field_id === fieldId) {
+        paramIndex = i;
+        return;
+      }
+    });
+    return paramIndex;
+  }
+
+  _genQueryFilter(parameters, posField) {
+    if (posField !== 0) {
+      let filters = { "filter-field-values": [] };
+      let urlParams = new URLSearchParams(window.location.search);
+      for (var i = 0; i < posField; i++) {
+        let parameter = parameters[i];
+        let filterValues = urlParams.getAll(parameter.slug);
+        let filter = { id: parameter.field_id, values: filterValues };
+        filters["filter-field-values"].push(filter);
+      }
+      return filters;
+    }
+    return null;
+  }
+
   componentWillMount() {
-    const { field, fetchFieldValues } = this.props;
+    const { field, parameters, fetchFilterFieldValues } = this.props;
     if (field.has_field_values === "list") {
-      fetchFieldValues(field.id);
+      let queryFilter = null;
+      if (parameters) {
+        const posFilter = this._getPosFilter(parameters, field.id);
+        queryFilter = this._genQueryFilter(parameters, posFilter);
+      }
+      fetchFilterFieldValues(field.id, queryFilter);
     }
   }
 

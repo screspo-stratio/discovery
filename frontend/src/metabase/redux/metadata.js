@@ -144,6 +144,11 @@ export const fetchFieldValues = (id, reload = false) => {
   return Fields.actions.fetchFieldValues({ id }, reload);
 };
 
+export const FETCH_FILTER_FIELD_VALUES = Fields.actions.fetchFilterFieldValues.toString();
+export const fetchFilterFieldValues = (id, filters, reload = true) => {
+  return Fields.actions.fetchFilterFieldValues({ id, filters }, reload);
+};
+
 export const UPDATE_FIELD_VALUES = Fields.actions.updateFieldValues.toString();
 export const updateFieldValues = (fieldId, fieldValuePairs) => {
   deprecated("metabase/redux/metadata updateFieldValues");

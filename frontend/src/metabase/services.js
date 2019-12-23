@@ -192,6 +192,10 @@ export const MetabaseApi = {
   field_get: GET("/api/field/:fieldId"),
   // field_summary:               GET("/api/field/:fieldId/summary"),
   field_values: GET("/api/field/:fieldId/values"),
+  filter_field_values: (id, filters) => {
+    var queryParam = filters ? "?filter-field-values="+encodeURIComponent(JSON.stringify(filters)) : '';
+    return GET("api/field/"+id+"/values" + queryParam);
+  },
   field_values_update: POST("/api/field/:fieldId/values"),
   field_update: PUT("/api/field/:id"),
   field_dimension_update: POST("/api/field/:fieldId/dimension"),
@@ -352,6 +356,10 @@ export function setFieldEndpoints(prefix: string, params: Data) {
     prefix + "/field/:fieldId/values",
     params,
   );
+  MetabaseApi.filter_field_values = (id,filters) => {
+    var queryParam = filters ? "?filter-field-values="+encodeURIComponent(JSON.stringify(filters)) : '';
+    return GET_with(prefix + "/field/" + id + "/values?filter-field-values=" + queryParam);
+  };
   MetabaseApi.field_search = GET_with(
     prefix + "/field/:fieldId/search/:searchFieldId",
     params,
