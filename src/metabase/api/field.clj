@@ -228,6 +228,8 @@
     )
   )
 
+
+
 ; in -> field of a table, field-catagory-with-values as [:id 3,:values ["a","b",...]
 ; out -> result of query {:data {:rows (.....values....)}}
 (defn get-field-with-fieldvalues
@@ -247,15 +249,18 @@
                  }}))
   )
 
-
 ;; Generate the where clausule for a field filter in dashboard taking account the values of other filters in the
 ;; dashboard.
 ;; in -> Field , {:id id, :value ["a","b"]} & more
 ;; out -> [:= name_field set-values]
 (defn generate-in-clause
+  "Generate MBQL where clause to filter the values to show in a dashboard filter"
   [field-to-filter field-with-values & more-field-id-values]
 
-  (if (nil? more-field-id-values)
+
+  (if more-field-id-values
+    ;; Recursion if more than one dashboard filter
+    (remove nil? [:and (generate-in-clause field-to-filter field-with-values) (generate-in-clause field-to-filter (first more-field-id-values))])
     (let [field-with-values-entity (Field (field-with-values :id))
           values-filter (field-with-values :values)]
       (if (= (table-id field-to-filter) (table-id field-with-values-entity))
@@ -277,14 +282,10 @@
             (if-let [fk-field-in-field-with-values (get-fk (table-id field-to-filter) (table-id field-with-values-entity))]
               (let [rows (get-in (get-field-with-fieldvalues fk-field-in-field-with-values field-with-values) [:data :rows])]
                 (filter-clause-with-values (table/pk-field-id (Table (table-id field-to-filter))) (flatten rows)) ;field with values is not pk
-                )
-              )
-            )
-          )
+                ))
+            ))
         )
       )
-    (do
-      (apply vector :and (generate-in-clause field-to-filter more-field-id-values)))
     )
   )
 
@@ -293,20 +294,16 @@
 ; out -> [:= [:field-id id] [["ASEO"] ["ESPACIO TRABAJO"]]]
 (defn filter-from-json
   [field-to-filter json-values]
+
   (as-> (json/parse-string json-values true) values-in-filter
         (apply generate-in-clause field-to-filter (values-in-filter :filter-field-values)))
   )
 
-;; Get values of field with a filter of additional values.
+;; Get field values taking a count the values of filter values placed before.
 ;; in -> where_values -> {"filter-field-values":[{"id":12729,"value":"LAVANDERIA"}]}
-;; out -> [("a"),("b"),("c"),...]
+;; out -> mbql filter for field-to-filter field [("a"),("b"),("c"),...]
 (defn field->values_with_where
   [field-to-filter where_values]
-
-  (log/debug (trs "función field->values_with_where"))
-  ;(log/debug (trs "field to filter {0}" field-to-filter))
-  ;(log/debug (trs "where_values" where_values))
-  ;(log/debug (trs "parseJson: " (json/parse-string where_values true)))
 
   ; json to map  {:field-field-values [{:id 12729, :values [LAVANDERIA]}]}
   (let [map_values_in_filter (filter-from-json field-to-filter where_values)
@@ -323,7 +320,6 @@
                                 }})
         rows    (get-in rows-query [:data :rows])]
 
-    ;(map conj rows)
     (flatten rows)
     ))
 
@@ -350,20 +346,7 @@
     ; there are some field values from other dashboard filters
     (let [field (Field id)]
       {:values (field->values_with_where field filter-field-values) :field_id id}
-      )
-
-
-    ; Caso en el que hay que revisar los valores de los otros filtros si impactan en los valores de este campo/filtro
-    ; Recibimos la llamada /api/field/:id/values?"field_id"=value1,value2,...&"field2_id"=value1,...
-    ; 1. Por cada campo con valor de filtro que viene en el endpoint como parámetro
-    ;   1.1 Cogemos el primer parámetro, y sacamos su tabla
-    ;   1.2 Vemos si esa tabla tiene una fk hacia la tabla del field :id principal
-    ;   1.3 Si tiene fk entonces creamos la query:
-    ;     select distinct "fild_:id" from table_field_:id where fk in (value1,value2,...)
-
-    )
-
-
+      ))
   )
 ;;;;;;FIN stratio;;;;;;;;;;;;;;;;
 

@@ -136,17 +136,26 @@ export default class ParameterValueWidget extends Component {
     return paramIndex;
   }
 
+  _castInt(strToCast) {
+    console.log('strToCast', strToCast);
+    console.log('find -', strToCast.includes("-"));
+    return parseInt(strToCast) && !strToCast.includes("-") ? parseInt(strToCast) : strToCast;
+  }
+
   _genQueryFilter(parameters, posField) {
     if (posField > 0) {
       let filters = { "filter-field-values": [] };
       let urlParams = new URLSearchParams(window.location.search);
       for (var i = 0; i < posField; i++) {
         let parameter = parameters[i];
-        let filterValues = urlParams.getAll(parameter.slug);
+        let filterValues = urlParams.getAll(parameter.slug).map(val => this._castInt(val));
         let filter = { id: parameter.field_ids[0], values: filterValues };
-        filters["filter-field-values"].push(filter);
+        console.log('cambio');
+        if (filter.id !== null && filter.values && filter.values.length > 0) {
+          filters["filter-field-values"].push(filter);
+        }
       }
-      return filters;
+      return filters["filter-field-values"].length > 0 ? filters : null;
     }
     return null;
   }
