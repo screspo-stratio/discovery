@@ -6,9 +6,10 @@
 
 ## 0.35.0-db40b8f (Built: November 25, 2019 | Pre-release)
 
+* [ROCK-345] Dashboard nested filters
 * Logs in Datacentric standard format
 * Avoid Discovery checks Crossdata connection each 3 mins
-* [ROCK-459] Maintaining the compatibility with Datio descriptor in Stratio scripts about service 
+* [ROCK-459] Maintaining the compatibility with Datio descriptor in Stratio scripts about service
   instance (DISCOVERY_INSTANCE_NAME)
 * Upgrade to Metabase 0.33.2
 * New Crossdata driver as a plugin
