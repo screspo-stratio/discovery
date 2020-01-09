@@ -11,7 +11,9 @@ import LoadingSpinner from "metabase/components/LoadingSpinner";
 import AutoExpanding from "metabase/hoc/AutoExpanding";
 
 import { MetabaseApi } from "metabase/services";
+//Stratio
 import { addRemappings, fetchFilterFieldValues } from "metabase/redux/metadata";
+//Fin Stratio
 import { defer } from "metabase/lib/promise";
 import { debounce } from "underscore";
 import { stripId } from "metabase/lib/formatting";
@@ -24,6 +26,7 @@ import type { LayoutRendererProps } from "metabase/components/TokenField";
 
 const MAX_SEARCH_RESULTS = 100;
 
+//Stratio
 const mapDispatchToProps = {
   addRemappings,
   fetchFilterFieldValues,
@@ -49,7 +52,7 @@ type Props = {
 
   className?: string,
 };
-
+//Fin Stratio
 type State = {
   loadingState: "INIT" | "LOADING" | "LOADED",
   options: [Value, ?string][],
@@ -81,6 +84,7 @@ export class FieldValuesWidget extends Component {
     maxWidth: 500,
   };
 
+  //Stratio
   _getPosFilter(parameters, fieldId) {
     let paramIndex;
     parameters && parameters.forEach((param,i) => {
@@ -127,6 +131,8 @@ export class FieldValuesWidget extends Component {
       fetchFilterFieldValues(field.id, queryFilter);
     }
   }
+  //Fin Stratio
+
 
   componentWillUnmount() {
     if (this._cancel) {

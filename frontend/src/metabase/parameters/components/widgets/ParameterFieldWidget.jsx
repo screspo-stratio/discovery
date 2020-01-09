@@ -76,7 +76,7 @@ export default class ParameterFieldWidget extends Component<*, Props, State> {
       }
     }
   }
-
+  //Stratio
   render() {
     const { setValue, isEditing, field, parentFocusChanged, parameters } = this.props;
     const { isFocused } = this.state;
