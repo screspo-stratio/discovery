@@ -4,7 +4,7 @@
 
 * Pending changelog
 
-## 0.35.0-db40b8f (Built: November 25, 2019 | Pre-release)
+## 0.35.0-8cd0e5b (Built: January 09, 2020 | Pre-release)
 
 * [ROCK-345] Dashboard nested filters
 * Logs in Datacentric standard format
@@ -13,6 +13,8 @@
   instance (DISCOVERY_INSTANCE_NAME)
 * Upgrade to Metabase 0.33.2
 * New Crossdata driver as a plugin
+* [ROCK-629] Add JWT authentication
+* Fix: Revert too strict site-url validation
 
 ## 0.34.0-7f4b16c (Built: September 19, 2019 | Released: September 20, 2019)
 
