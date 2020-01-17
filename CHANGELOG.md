@@ -4,7 +4,7 @@
 
 * [ROCK-1228] Fix: error message not shown when invalid username or password
 
-## 0.34.2 (December 16, 2019)
+## 0.34.2 (January 17, 2020)
 
 * [ROCK-629] Add JWT authentication
 
