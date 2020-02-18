@@ -81,6 +81,7 @@
 
 ;; workaround for SPARK-9686 Spark Thrift server doesn't return correct JDBC metadata
 (defn- describe-database [_ {:keys [details] :as database}]
+  (println "describe-database")
   {:tables (with-open [conn (jdbc/get-connection (sql/db->jdbc-connection-spec database))]
              (set (for [result (jdbc/query {:connection conn}
                                            ["show tables"])]
@@ -90,6 +91,7 @@
 
 ;; workaround for SPARK-9686 Spark Thrift server doesn't return correct JDBC metadata
 (defn- describe-table [driver {:keys [details] :as database} table]
+  (println "describe-table function")
   (with-open [conn (jdbc/get-connection (sql/db->jdbc-connection-spec database))]
     (jdbc/query {:connection conn}
                 [(if (:schema table)
@@ -97,18 +99,21 @@
                            (dash-to-underscore (:schema table))
                            (dash-to-underscore (:name table)))
                    (str "refresh table " (dash-to-underscore (:name table))))])
-    {:name (:name table)
-     :schema (:schema table)
-     :fields (set (for [result (jdbc/query {:connection conn}
-                                           [(if (:schema table)
-                                              (format "describe `%s`.`%s`"
-                                                      (dash-to-underscore (:schema table))
-                                                      (dash-to-underscore (:name table)))
-                                              (str "describe " (dash-to-underscore (:name table))))])]
-                    {:name (:col_name result)
-                     :database-type (:data_type result)
-                     :base-type ((sql/pattern-based-column->base-type pattern->type) "crossdata2" (keyword (:data_type result)))}))}))
 
+    (let [describe-table (jdbc/query {:connection conn}
+                             [(if (:schema table)
+                                (format "describe `%s`.`%s`"
+                                        (dash-to-underscore (:schema table))
+                                        (dash-to-underscore (:name table)))
+                                (str "describe " (dash-to-underscore (:name table))))])]
+      (println "Function describe-table: Table:" table "crossdata field:" describe-table)
+      {:name (:name table)
+       :schema (:schema table)
+       :fields (set (for [result describe-table]
+                      {:name (:col_name result)
+                       :database-type (:data_type result)
+                       :base-type ((sql/pattern-based-column->base-type pattern->type) "crossdata2" (keyword (:data_type result)))}))}
+      )))
 
 (defn execute-query
   "Process and run a native (raw SQL) QUERY."
